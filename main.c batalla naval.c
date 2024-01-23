@@ -4,12 +4,16 @@
 #include <ctype.h>
 #include <time.h>
 
-#ifdef WIN32
+#if defined(_WIN32)
 	#include <windows.h>	
 	#define Esperar(x) Sleep(x)
-	#define Limpiar_Pantalla system("cls")
-#endif 
-
+	#define Cambiar_Color system("color 70");
+	//~ #define Pausar system("pause")
+#elif defined(__unix__)
+	#include <unistd.h>
+	#define Esperar(x) sleep(x/1000)
+	#define Cambiar_Color printf("\x1b]11;#ffffff\a \x1b]10;#000000\a;"); //esto son secuencias de escape para xterm y similares.
+#endif
 
 #define AGUA '^'
 #define TOCADO '*'
@@ -30,7 +34,7 @@ typedef struct
 	int numero;
 }Casilla;
 
-char TableroJ1[10][10],TableroJ2[10][10],Aux[10][10],frase[50]="\0";
+char TableroJ1[10][10],TableroJ2[10][10],Aux[10][10],frase[52]="\0";
 int Barcos[9]={PORTAVIONES,ACORAZADO,ACORAZADO1,ACORAZADO2,SUBMARINO,SUBMARINO1,SUBMARINO2,DESTRUCTOR,DESTRUCTOR1};
 Casilla Lista[100];
 int aux=0,contador=0,tocadosJ1=0,tocadosJ2=0;
@@ -47,18 +51,29 @@ void TurnoJ2();
 char AtacarCasilla(char[10][10],Casilla);
 void GenerarLista();
 
+void Limpiar_Pantalla() {
+	printf("\033[2J"); //limpia toda la pantalla
+	printf("\033[H"); // vuelve el cursor a la posición origen
+}
 
+void Pausar() {
+	printf("Presione una tecla para continuar");
+	char un_caracter = getchar();
+	if (un_caracter != '\n') ungetc(un_caracter,stdin); //para comerse el ultimo caracter dejado por la última entrada si es un salto de línea
+	getchar();
+}
 int main()
 {
 	int res;
-    system("color 70");
+    Cambiar_Color;
  
     printf("\n\n\t    ~BATALLA NAVAL~\n\n\t\t#\n\t\t#|\n\t\t#|#\n\t\t#|##\n\t\t#|###\n\t\t#|####");
     printf("\n\t\t#|#####\n\t\t#|######\n\t#########################\n\t _______________________");
     printf("\n\t  ####/)###############\n\t   ###(/##############\n\t    #################\n\t     ###############");
     printf("\n\n\n\t1- JUGAR\n\n\t2- SALIR\n\n\n\tIngresa una opcion:");
     scanf("%d", &res);
-    system("cls");
+    
+    Limpiar_Pantalla();
        
     switch(res)
     { 
@@ -99,12 +114,13 @@ int main()
 	printf("     TABLERO CREADO\n");
 	Esperar(1500);
 
-	Limpiar_Pantalla;
+	Limpiar_Pantalla();
 	printf("Generando tablero oponente...");
 	IniciarTablero(Aux,OCULTA); 
 	IniciarTableroJ2(); 
 	GenerarLista();
-	Limpiar_Pantalla;
+	Limpiar_Pantalla();
+	//~ printf("si se muestra este mensaje significa que realmente esta pasando de la pausa"); //¿ahora se esta saltenado la pausa? 
 	printf("\n\n\n\n\n\n                              EMPIEZA EL JUEGO\n");
 	Esperar(2000);
 
@@ -114,7 +130,7 @@ int main()
 		TurnoJ1(); 
 		if (tocadosJ1 == 17) 
 		{					 
-			Limpiar_Pantalla;
+			Limpiar_Pantalla();
 			printf(" GANASTE\n");
 			return 0;
 		}
@@ -122,7 +138,7 @@ int main()
 		TurnoJ2(); 
 		if (tocadosJ1 == 17) 
 		{					 
-			Limpiar_Pantalla;
+			Limpiar_Pantalla();
 			printf(" PERDISTE\n");
 			return 0;
 		}
@@ -168,7 +184,7 @@ void DibujarTablero(char Tablero[10][10])
 {
 	int i,j,letra=65;
 	
-	Limpiar_Pantalla;
+	Limpiar_Pantalla();
 	printf("        1 2 3 4 5 6 7 8 9 10\n\n");
 	for (i=0;i<10;i++,letra++)
 	{
@@ -189,19 +205,18 @@ void PedirCasilla(int barco)
 
 	do {
 		valida=0;
-		fflush(stdin);
 		printf("Letra: ");
-		scanf("%c",&cas.letra);
+		scanf(" %c",&cas.letra);
 		cas.letra=toupper(cas.letra);
-		if (cas.letra < 65 || cas.letra > 74) 
-			valida++;
+		if (cas.letra < 65 || cas.letra > 74)
+				valida++;
 		printf("Numero: ");
 		scanf("%d",&cas.numero);
-		if (cas.numero < 1 || cas.numero > 10) 
+		if (cas.numero < 1 || cas.numero > 10)
 			valida++;
+			
 		printf("Vertical u horizontal (v/h): ");
-		fflush(stdin);
-		scanf("%c",&posicion);
+		scanf(" %c",&posicion);
 		if (posicion != 'v' && posicion != 'h') 
 			valida++;
 		if (!VerificarCasilla(TableroJ1,cas,barco,posicion))	
@@ -328,9 +343,8 @@ void TurnoJ1()
 	DibujarTablero(Aux);
 	do {
 		valida=0;
-		fflush(stdin);
 		printf("Letra: ");
-		scanf("%c",&cas.letra);
+		scanf(" %c",&cas.letra);
 		cas.letra=toupper(cas.letra);
 		if (cas.letra < 65 || cas.letra > 74) 
 			valida++;
@@ -358,7 +372,7 @@ void TurnoJ1()
 	else 
 		strcpy(frase,"                  Agua\n");
 	DibujarTablero(Aux); 
-	system("pause");
+	Pausar();
 }
 
 
@@ -382,7 +396,7 @@ void TurnoJ2()
 	else 
 		strcpy(frase,"                  Agua\n");
 	DibujarTablero(TableroJ1); 
-	system("pause");
+	Pausar();
 }
 
 
@@ -419,7 +433,7 @@ void GenerarLista()
 		Lista[i]=Lista[num];
 		Lista[num]=aux;
 	}
-  system("PAUSE");	
+	Pausar();	
   }
 
 
